@@ -1,0 +1,12 @@
+#!/bin/sh
+GM=${GRAND_MOTHER?"mandatory parameter"}
+
+DB=/linkgraph.db
+CID=`cat /proc/self/cgroup | grep 'docker' | sed 's/^.*\///' | tail -n1`
+GM_CID=`sqlite3 $DB "select entity_id from edge where name='$GM' limit 1;"`
+sqlite3 $DB "
+	INSERT INTO edge (entity_id, parent_id, name)
+	VALUES ('$GM_CID', '$CID', '$GM');"
+trap 'exit 0' SIGTERM
+tail -f /dev/null &
+wait
