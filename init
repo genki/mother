@@ -2,11 +2,13 @@
 GM=${GRAND_MOTHER?"mandatory parameter"}
 
 DB=/linkgraph.db
+SQL="SELECT entity_id FROM edge WHERE name='$GM' LIMIT 1;"
 CID=`cat /proc/self/cgroup | grep 'docker' | sed 's/^.*\///' | tail -n1`
-GM_CID=`sqlite3 $DB "select entity_id from edge where name='$GM' limit 1;"`
+until GM_CID=`sqlite3 $DB "$SQL"`; do usleep 100000; done
 sqlite3 $DB "
-	INSERT INTO edge (entity_id, parent_id, name)
+	INSERT IGNORE INTO edge (entity_id, parent_id, name)
 	VALUES ('$GM_CID', '$CID', '$GM');"
+echo "dependency to $GM injected to the docker daemon"
 trap 'exit 0' SIGTERM
 tail -f /dev/null &
 wait
